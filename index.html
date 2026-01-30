@@ -9,10 +9,9 @@
       --bg: #2f2f2f;
       --ringTrack: rgba(255,255,255,0.18);
 
-      /* Change #3: darker green made darker */
-      --segInhale: #4f7f67;  /* darker */
-      --segHold:   #9bbfae;  /* lighter green */
-      --segExhale: #e6e3d6;  /* warm off-white */
+      --segInhale: #4f7f67;
+      --segHold:   #9bbfae;
+      --segExhale: #e6e3d6;
 
       --text: rgba(255,255,255,0.85);
       --muted: rgba(255,255,255,0.55);
@@ -20,17 +19,16 @@
       --size: min(72vw, 320px);
       --stroke: 14;
       --dot: 16px;
-      --dotFill: #d8a3a3; /* pink-ish like screenshot */
+      --dotFill: #d8a3a3;
       --dotOutline: rgba(0,0,0,0.35);
 
       --minScale: 0.78;
-
-      /* Change #2: ring grows larger on inhale/hold */
       --maxScale: 1.14;
     }
 
     *{ box-sizing:border-box; }
     html,body{ height:100%; }
+
     body{
       margin:0;
       background: var(--bg);
@@ -47,7 +45,18 @@
       display:flex;
       flex-direction:column;
       align-items:center;
-      gap: 16px;
+      gap: 14px;
+    }
+
+    /* NEW TITLE */
+    .calmTitle{
+      margin: 0 0 4px 0;
+      font-size: 17px;
+      font-weight: 500;
+      letter-spacing: 0.3px;
+      color: rgba(255,255,255,0.75);
+      text-align: center;
+      line-height: 1.4;
     }
 
     .vizBox{
@@ -72,8 +81,7 @@
     svg{
       width: 100%;
       height: 100%;
-      overflow: visible;
-      transform: rotate(-90deg); /* start at 12 o'clock */
+      transform: rotate(-90deg);
     }
 
     .centerText{
@@ -93,21 +101,9 @@
       border-radius: 999px;
       background: var(--dotFill);
       border: 2px solid var(--dotOutline);
-      left: 0;
-      top: 0;
-
-      /* Change #1: smoother motion (GPU transform, no layout writes) */
       transform: translate3d(0,0,0);
       will-change: transform;
       pointer-events:none;
-    }
-
-    .hint{
-      color: var(--muted);
-      font-size: 13px;
-      text-align:center;
-      line-height: 1.4;
-      margin: 0;
     }
 
     .controls{
@@ -124,45 +120,48 @@
       border-radius: 14px;
       cursor:pointer;
       font-weight: 650;
-      letter-spacing: 0.2px;
-      transition: transform 120ms ease, background 120ms ease, border-color 120ms ease;
     }
-    button:hover{
-      background: rgba(255,255,255,0.12);
-      border-color: rgba(255,255,255,0.30);
-    }
-    button:active{ transform: translateY(1px); }
+
     button.primary{
       background: rgba(255,255,255,0.92);
       color: rgba(0,0,0,0.82);
-      border-color: rgba(255,255,255,0.60);
     }
+
     button:disabled{
       opacity: 0.55;
       cursor:not-allowed;
+    }
+
+    .hint{
+      color: var(--muted);
+      font-size: 13px;
+      text-align:center;
+      margin: 0;
     }
   </style>
 </head>
 <body>
   <div class="wrap">
-    <div class="vizBox" id="vizBox" aria-label="4-7-8 breathing timer">
+
+    <!-- TITLE ADDED -->
+    <h2 class="calmTitle">It will be okay, stay as long as you need</h2>
+
+    <div class="vizBox" id="vizBox">
       <div class="ringScale" id="ringScale">
-        <svg viewBox="0 0 200 200" aria-hidden="true">
-          <!-- Track -->
+        <svg viewBox="0 0 200 200">
           <circle cx="100" cy="100" r="70"
                   fill="none" stroke="var(--ringTrack)"
-                  stroke-width="var(--stroke)" stroke-linecap="butt" />
+                  stroke-width="var(--stroke)" />
 
-          <!-- Segments (inhale, hold, exhale) -->
           <circle id="segInhale" cx="100" cy="100" r="70"
                   fill="none" stroke="var(--segInhale)"
-                  stroke-width="var(--stroke)" stroke-linecap="butt" />
+                  stroke-width="var(--stroke)" />
           <circle id="segHold" cx="100" cy="100" r="70"
                   fill="none" stroke="var(--segHold)"
-                  stroke-width="var(--stroke)" stroke-linecap="butt" />
+                  stroke-width="var(--stroke)" />
           <circle id="segExhale" cx="100" cy="100" r="70"
                   fill="none" stroke="var(--segExhale)"
-                  stroke-width="var(--stroke)" stroke-linecap="butt" />
+                  stroke-width="var(--stroke)" />
         </svg>
       </div>
 
@@ -178,171 +177,104 @@
     <p class="hint">Inhale 4 seconds • Hold 7 seconds • Exhale 8 seconds</p>
   </div>
 
-  <script>
-    const phases = [
-      { key: "inhale", label: "inhale", sec: 4 },
-      { key: "hold",   label: "hold",   sec: 7 },
-      { key: "exhale", label: "exhale", sec: 8 },
-    ];
-    const totalSec = phases.reduce((a,p)=>a+p.sec,0);
+<script>
+  const phases = [
+    { key:"inhale", sec:4 },
+    { key:"hold", sec:7 },
+    { key:"exhale", sec:8 }
+  ];
+  const totalSec = 19;
 
-    const vizBox = document.getElementById("vizBox");
-    const ringScaleEl = document.getElementById("ringScale");
-    const phaseLabelEl = document.getElementById("phaseLabel");
-    const dotEl = document.getElementById("dot");
+  const vizBox = document.getElementById("vizBox");
+  const ringScale = document.getElementById("ringScale");
+  const phaseLabel = document.getElementById("phaseLabel");
+  const dot = document.getElementById("dot");
+  const startBtn = document.getElementById("startBtn");
+  const pauseBtn = document.getElementById("pauseBtn");
 
-    const startBtn = document.getElementById("startBtn");
-    const pauseBtn = document.getElementById("pauseBtn");
+  const svgR = 70;
+  let geom = { cx:0, cy:0, r:0 };
 
-    const segInhale = document.getElementById("segInhale");
-    const segHold   = document.getElementById("segHold");
-    const segExhale = document.getElementById("segExhale");
+  function recompute(){
+    const b = vizBox.getBoundingClientRect();
+    geom.cx = b.width/2;
+    geom.cy = b.height/2;
+    geom.r = (Math.min(b.width,b.height)/2)*(svgR/100);
+  }
+  window.addEventListener("resize", recompute);
 
-    // SVG circle geometry
-    const svgR = 70;
-    const svgC = 2 * Math.PI * svgR;
+  let running=false, paused=false, raf;
+  let t0=0, pausedAt=0, pauseAccum=0;
 
-    function setSegment(circleEl, startFrac, lenFrac) {
-      const segLen = svgC * lenFrac;
-      const gapLen = svgC - segLen;
-      circleEl.style.strokeDasharray = `${segLen} ${gapLen}`;
-      circleEl.style.strokeDashoffset = `${-svgC * startFrac}`;
+  function now(){ return performance.now(); }
+
+  function elapsed(){
+    return ((now()-t0-pauseAccum)/1000)%totalSec;
+  }
+
+  function lerp(a,b,t){ return a+(b-a)*t; }
+
+  function phaseFor(sec){
+    let a=0;
+    for(const p of phases){
+      if(sec>=a && sec<a+p.sec)
+        return {p, t:(sec-a)/p.sec};
+      a+=p.sec;
     }
+    return {p:phases[2], t:1};
+  }
 
-    const inhaleFrac = phases[0].sec / totalSec;
-    const holdFrac   = phases[1].sec / totalSec;
-    const exhaleFrac = phases[2].sec / totalSec;
+  function tick(){
+    if(!running||paused) return;
+    const sec=elapsed();
+    const frac=sec/totalSec;
+    const {p,t}=phaseFor(sec);
 
-    setSegment(segInhale, 0, inhaleFrac);
-    setSegment(segHold, inhaleFrac, holdFrac);
-    setSegment(segExhale, inhaleFrac + holdFrac, exhaleFrac);
+    phaseLabel.textContent=p.key;
 
-    // Animation state
-    let running = false;
-    let paused = false;
-    let raf = null;
+    let scale=0.78;
+    if(p.key==="inhale") scale=lerp(0.78,1.14,t);
+    if(p.key==="hold") scale=1.14;
+    if(p.key==="exhale") scale=lerp(1.14,0.78,t);
+    ringScale.style.transform=`scale(${scale})`;
 
-    let t0 = 0;
-    let pausedAt = 0;
-    let pauseAccum = 0;
+    const ang=-Math.PI/2+frac*2*Math.PI;
+    const x=geom.cx+geom.r*scale*Math.cos(ang);
+    const y=geom.cy+geom.r*scale*Math.sin(ang);
+    dot.style.transform=`translate3d(${x-8}px,${y-8}px,0)`;
 
-    const rootStyles = getComputedStyle(document.documentElement);
-    const minScale = parseFloat(rootStyles.getPropertyValue('--minScale')) || 0.78;
-    const maxScale = parseFloat(rootStyles.getPropertyValue('--maxScale')) || 1.14;
+    raf=requestAnimationFrame(tick);
+  }
 
-    function nowMs(){ return performance.now(); }
+  startBtn.onclick=()=>{
+    if(running) return;
+    running=true;
+    paused=false;
+    pauseAccum=0;
+    t0=now();
+    startBtn.disabled=true;
+    pauseBtn.disabled=false;
+    pauseBtn.textContent="Pause";
+    raf=requestAnimationFrame(tick);
+  };
 
-    function getElapsedSec() {
-      const t = nowMs();
-      const activeMs = t - t0 - pauseAccum;
-      const sec = (activeMs / 1000) % totalSec;
-      return sec < 0 ? 0 : sec;
+  pauseBtn.onclick=()=>{
+    if(!running) return;
+    if(!paused){
+      paused=true;
+      pausedAt=now();
+      pauseBtn.textContent="Resume";
+      cancelAnimationFrame(raf);
+    }else{
+      paused=false;
+      pauseAccum+=now()-pausedAt;
+      pauseBtn.textContent="Pause";
+      raf=requestAnimationFrame(tick);
     }
+  };
 
-    function phaseFor(sec) {
-      let acc = 0;
-      for (const p of phases) {
-        const start = acc;
-        const end = acc + p.sec;
-        if (sec >= start && sec < end) {
-          return { p, start, end, phaseProgress: (sec - start) / p.sec };
-        }
-        acc = end;
-      }
-      const last = phases[phases.length - 1];
-      return { p:last, start: totalSec-last.sec, end: totalSec, phaseProgress: 1 };
-    }
-
-    function lerp(a,b,t){ return a + (b-a)*t; }
-
-    function setScaleForPhase(key, t) {
-      let s = minScale;
-      if (key === "inhale") s = lerp(minScale, maxScale, t);
-      else if (key === "hold") s = maxScale;
-      else if (key === "exhale") s = lerp(maxScale, minScale, t);
-      ringScaleEl.style.transform = `scale(${s})`;
-      return s;
-    }
-
-    // Change #1: cache geometry (no per-frame layout reads)
-    let geom = { cx: 0, cy: 0, baseRadius: 0 };
-    function recomputeGeometry(){
-      const box = vizBox.getBoundingClientRect();
-      geom.cx = box.width / 2;
-      geom.cy = box.height / 2;
-      geom.baseRadius = (Math.min(box.width, box.height) / 2) * (svgR / 100);
-    }
-    window.addEventListener('resize', recomputeGeometry, { passive: true });
-
-    function placeDot(elapsedFrac, currentScale) {
-      const rPx = geom.baseRadius * currentScale;
-
-      // Start at top, clockwise
-      const angle = (-Math.PI / 2) + (elapsedFrac * 2 * Math.PI);
-      const x = geom.cx + rPx * Math.cos(angle);
-      const y = geom.cy + rPx * Math.sin(angle);
-
-      // GPU transform (no layout writes)
-      dotEl.style.transform = `translate3d(${(x - dotEl.offsetWidth/2).toFixed(2)}px, ${(y - dotEl.offsetHeight/2).toFixed(2)}px, 0)`;
-    }
-
-    function tick() {
-      if (!running || paused) return;
-
-      const sec = getElapsedSec();
-      const frac = sec / totalSec;
-
-      const { p, phaseProgress } = phaseFor(sec);
-      phaseLabelEl.textContent = p.label;
-
-      const scale = setScaleForPhase(p.key, phaseProgress);
-      placeDot(frac, scale);
-
-      raf = requestAnimationFrame(tick);
-    }
-
-    function start() {
-      if (running) return;
-
-      running = true;
-      paused = false;
-      pauseAccum = 0;
-      t0 = nowMs();
-
-      startBtn.disabled = true;
-      pauseBtn.disabled = false;
-      pauseBtn.textContent = "Pause";
-
-      raf = requestAnimationFrame(tick);
-    }
-
-    function pauseToggle() {
-      if (!running) return;
-
-      if (!paused) {
-        paused = true;
-        pausedAt = nowMs();
-        pauseBtn.textContent = "Resume";
-        if (raf) cancelAnimationFrame(raf);
-        raf = null;
-      } else {
-        paused = false;
-        pauseAccum += (nowMs() - pausedAt);
-        pauseBtn.textContent = "Pause";
-        raf = requestAnimationFrame(tick);
-      }
-    }
-
-    startBtn.addEventListener("click", start);
-    pauseBtn.addEventListener("click", pauseToggle);
-
-    // Initial
-    recomputeGeometry();
-    (function initPreview(){
-      const scale = setScaleForPhase("inhale", 0);
-      placeDot(0, scale);
-      phaseLabelEl.textContent = "inhale";
-    })();
-  </script>
+  recompute();
+  tick();
+</script>
 </body>
 </html>
