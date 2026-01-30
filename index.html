@@ -8,9 +8,12 @@
     :root{
       --bg: #2f2f2f;
       --ringTrack: rgba(255,255,255,0.18);
-      --segInhale: #78a88f;  /* green-ish */
+
+      /* Change #3: darker green made darker */
+      --segInhale: #4f7f67;  /* darker */
       --segHold:   #9bbfae;  /* lighter green */
       --segExhale: #e6e3d6;  /* warm off-white */
+
       --text: rgba(255,255,255,0.85);
       --muted: rgba(255,255,255,0.55);
 
@@ -19,8 +22,11 @@
       --dot: 16px;
       --dotFill: #d8a3a3; /* pink-ish like screenshot */
       --dotOutline: rgba(0,0,0,0.35);
-      --minScale: 0.78;   /* how small during exhale end */
-      --maxScale: 1.00;   /* how big during hold/inhale end */
+
+      --minScale: 0.78;
+
+      /* Change #2: ring grows larger on inhale/hold */
+      --maxScale: 1.14;
     }
 
     *{ box-sizing:border-box; }
@@ -87,9 +93,13 @@
       border-radius: 999px;
       background: var(--dotFill);
       border: 2px solid var(--dotOutline);
-      transform: translate(-50%, -50%);
+      left: 0;
+      top: 0;
+
+      /* Change #1: smoother motion (GPU transform, no layout writes) */
+      transform: translate3d(0,0,0);
+      will-change: transform;
       pointer-events:none;
-      will-change: left, top;
     }
 
     .hint{
@@ -135,11 +145,11 @@
 </head>
 <body>
   <div class="wrap">
-    <div class="vizBox" aria-label="4-7-8 breathing timer">
+    <div class="vizBox" id="vizBox" aria-label="4-7-8 breathing timer">
       <div class="ringScale" id="ringScale">
         <svg viewBox="0 0 200 200" aria-hidden="true">
           <!-- Track -->
-          <circle id="track" cx="100" cy="100" r="70"
+          <circle cx="100" cy="100" r="70"
                   fill="none" stroke="var(--ringTrack)"
                   stroke-width="var(--stroke)" stroke-linecap="butt" />
 
@@ -169,7 +179,6 @@
   </div>
 
   <script>
-    // 4-7-8 breathing: ring scales + dot travels full cycle.
     const phases = [
       { key: "inhale", label: "inhale", sec: 4 },
       { key: "hold",   label: "hold",   sec: 7 },
@@ -177,6 +186,7 @@
     ];
     const totalSec = phases.reduce((a,p)=>a+p.sec,0);
 
+    const vizBox = document.getElementById("vizBox");
     const ringScaleEl = document.getElementById("ringScale");
     const phaseLabelEl = document.getElementById("phaseLabel");
     const dotEl = document.getElementById("dot");
@@ -188,20 +198,17 @@
     const segHold   = document.getElementById("segHold");
     const segExhale = document.getElementById("segExhale");
 
-    // Geometry (must match SVG circle r)
+    // SVG circle geometry
     const svgR = 70;
     const svgC = 2 * Math.PI * svgR;
 
-    // Segment dash setup: each segment is a portion of the circumference.
     function setSegment(circleEl, startFrac, lenFrac) {
       const segLen = svgC * lenFrac;
       const gapLen = svgC - segLen;
       circleEl.style.strokeDasharray = `${segLen} ${gapLen}`;
-      // Because svg is rotated -90deg, "start" at top. Dashoffset moves start point.
       circleEl.style.strokeDashoffset = `${-svgC * startFrac}`;
     }
 
-    // Fractions along the ring
     const inhaleFrac = phases[0].sec / totalSec;
     const holdFrac   = phases[1].sec / totalSec;
     const exhaleFrac = phases[2].sec / totalSec;
@@ -215,13 +222,13 @@
     let paused = false;
     let raf = null;
 
-    // Use perf time so pause/resume is clean
-    let t0 = 0;           // start time reference
-    let pausedAt = 0;     // when paused
-    let pauseAccum = 0;   // total paused duration
+    let t0 = 0;
+    let pausedAt = 0;
+    let pauseAccum = 0;
 
-    const minScale = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--minScale')) || 0.78;
-    const maxScale = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--maxScale')) || 1.0;
+    const rootStyles = getComputedStyle(document.documentElement);
+    const minScale = parseFloat(rootStyles.getPropertyValue('--minScale')) || 0.78;
+    const maxScale = parseFloat(rootStyles.getPropertyValue('--maxScale')) || 1.14;
 
     function nowMs(){ return performance.now(); }
 
@@ -242,7 +249,6 @@
         }
         acc = end;
       }
-      // fallback at exact end
       const last = phases[phases.length - 1];
       return { p:last, start: totalSec-last.sec, end: totalSec, phaseProgress: 1 };
     }
@@ -250,9 +256,6 @@
     function lerp(a,b,t){ return a + (b-a)*t; }
 
     function setScaleForPhase(key, t) {
-      // inhale: scale up min -> max
-      // hold: stay at max
-      // exhale: scale down max -> min
       let s = minScale;
       if (key === "inhale") s = lerp(minScale, maxScale, t);
       else if (key === "hold") s = maxScale;
@@ -261,25 +264,26 @@
       return s;
     }
 
+    // Change #1: cache geometry (no per-frame layout reads)
+    let geom = { cx: 0, cy: 0, baseRadius: 0 };
+    function recomputeGeometry(){
+      const box = vizBox.getBoundingClientRect();
+      geom.cx = box.width / 2;
+      geom.cy = box.height / 2;
+      geom.baseRadius = (Math.min(box.width, box.height) / 2) * (svgR / 100);
+    }
+    window.addEventListener('resize', recomputeGeometry, { passive: true });
+
     function placeDot(elapsedFrac, currentScale) {
-      // Place dot around the OUTER ring, compensating for current scale.
-      const box = document.querySelector(".vizBox").getBoundingClientRect();
-      const cx = box.width / 2;
-      const cy = box.height / 2;
+      const rPx = geom.baseRadius * currentScale;
 
-      // Match the ring radius in screen pixels:
-      // svg viewBox is 200x200, r=70 => radius ratio = 70/100 of half-size.
-      const baseRadius = (Math.min(box.width, box.height) / 2) * (svgR / 100);
-
-      const rPx = baseRadius * currentScale;
-
-      // Angle starts at top, clockwise
+      // Start at top, clockwise
       const angle = (-Math.PI / 2) + (elapsedFrac * 2 * Math.PI);
-      const x = cx + rPx * Math.cos(angle);
-      const y = cy + rPx * Math.sin(angle);
+      const x = geom.cx + rPx * Math.cos(angle);
+      const y = geom.cy + rPx * Math.sin(angle);
 
-      dotEl.style.left = `${x}px`;
-      dotEl.style.top = `${y}px`;
+      // GPU transform (no layout writes)
+      dotEl.style.transform = `translate3d(${(x - dotEl.offsetWidth/2).toFixed(2)}px, ${(y - dotEl.offsetHeight/2).toFixed(2)}px, 0)`;
     }
 
     function tick() {
@@ -332,7 +336,8 @@
     startBtn.addEventListener("click", start);
     pauseBtn.addEventListener("click", pauseToggle);
 
-    // Initial positions (pre-start)
+    // Initial
+    recomputeGeometry();
     (function initPreview(){
       const scale = setScaleForPhase("inhale", 0);
       placeDot(0, scale);
