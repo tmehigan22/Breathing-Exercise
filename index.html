@@ -2,697 +2,342 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>4-7-8 Breathing</title>
   <style>
     :root{
-      --bg1:#0b2a44;
-      --bg2:#0f3b63;
-      --card: rgba(255,255,255,0.10);
-      --card2: rgba(255,255,255,0.16);
-      --text: rgba(255,255,255,0.92);
-      --muted: rgba(255,255,255,0.72);
-      --ring: rgba(255,255,255,0.22);
-      --accent: rgba(255,255,255,0.95);
-      --shadow: 0 18px 50px rgba(0,0,0,0.35);
-      --radius: 20px;
-      --orbSize: 260px;
+      --bg: #2f2f2f;
+      --ringTrack: rgba(255,255,255,0.18);
+      --segInhale: #78a88f;  /* green-ish */
+      --segHold:   #9bbfae;  /* lighter green */
+      --segExhale: #e6e3d6;  /* warm off-white */
+      --text: rgba(255,255,255,0.85);
+      --muted: rgba(255,255,255,0.55);
+
+      --size: min(72vw, 320px);
+      --stroke: 14;
+      --dot: 16px;
+      --dotFill: #d8a3a3; /* pink-ish like screenshot */
+      --dotOutline: rgba(0,0,0,0.35);
+      --minScale: 0.78;   /* how small during exhale end */
+      --maxScale: 1.00;   /* how big during hold/inhale end */
     }
 
-    * { box-sizing: border-box; }
+    *{ box-sizing:border-box; }
     html,body{ height:100%; }
     body{
       margin:0;
-      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";
+      background: var(--bg);
       color: var(--text);
-      background: radial-gradient(1200px 800px at 30% 20%, #1a5a8a 0%, transparent 55%),
-                  radial-gradient(1000px 700px at 70% 80%, #1b3b6a 0%, transparent 55%),
-                  linear-gradient(160deg, var(--bg1), var(--bg2));
-      overflow:hidden;
-    }
-
-    /* Subtle animated wave background */
-    .waves{
-      position: absolute;
-      inset: -20%;
-      filter: blur(10px);
-      opacity: 0.35;
-      pointer-events:none;
-    }
-    .wave{
-      position:absolute;
-      width: 140%;
-      height: 140%;
-      left: -20%;
-      top: -20%;
-      background: radial-gradient(circle at 30% 40%, rgba(255,255,255,0.14), transparent 60%),
-                  radial-gradient(circle at 70% 60%, rgba(255,255,255,0.10), transparent 55%);
-      transform-origin: center;
-      animation: drift 14s ease-in-out infinite;
-    }
-    .wave:nth-child(2){
-      opacity:0.7;
-      animation-duration: 19s;
-      animation-direction: reverse;
-      transform: rotate(15deg);
-    }
-    .wave:nth-child(3){
-      opacity:0.55;
-      animation-duration: 26s;
-      transform: rotate(-10deg);
-    }
-    @keyframes drift{
-      0%{ transform: translate3d(0,0,0) rotate(0deg) scale(1.0); }
-      50%{ transform: translate3d(2%, -2%, 0) rotate(6deg) scale(1.06); }
-      100%{ transform: translate3d(0,0,0) rotate(0deg) scale(1.0); }
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding: 22px;
     }
 
     .wrap{
-      position: relative;
-      height:100%;
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      padding: 22px;
-    }
-
-    .card{
-      width: min(980px, 100%);
-      background: linear-gradient(180deg, var(--card), rgba(255,255,255,0.06));
-      border: 1px solid rgba(255,255,255,0.14);
-      border-radius: var(--radius);
-      box-shadow: var(--shadow);
-      padding: 22px;
-      display: grid;
-      gap: 18px;
-      grid-template-columns: 1.05fr 0.95fr;
-      backdrop-filter: blur(10px);
-    }
-
-    @media (max-width: 900px){
-      .card{ grid-template-columns: 1fr; }
-      :root{ --orbSize: 240px; }
-    }
-
-    .header{
+      width: min(680px, 100%);
       display:flex;
       flex-direction:column;
-      gap: 8px;
-    }
-    .title{
-      display:flex;
-      align-items:baseline;
-      justify-content:space-between;
-      gap: 12px;
-    }
-    h1{
-      margin:0;
-      font-size: 20px;
-      letter-spacing: 0.2px;
-    }
-    .pill{
-      font-size: 12px;
-      color: rgba(0,0,0,0.78);
-      background: rgba(255,255,255,0.92);
-      padding: 6px 10px;
-      border-radius: 999px;
-      white-space: nowrap;
-    }
-    .sub{
-      margin:0;
-      color: var(--muted);
-      font-size: 13px;
-      line-height: 1.45;
-    }
-
-    .visual{
-      display:flex;
       align-items:center;
-      justify-content:center;
-      padding: 14px 0 4px;
+      gap: 16px;
     }
 
-    .orbShell{
-      width: var(--orbSize);
-      height: var(--orbSize);
-      border-radius: 999px;
+    .vizBox{
       position: relative;
+      width: var(--size);
+      height: var(--size);
       display:grid;
       place-items:center;
+      user-select:none;
     }
 
-    /* Outer ring with progress stroke */
-    svg{
+    .ringScale{
       position:absolute;
       inset:0;
-      transform: rotate(-90deg);
+      display:grid;
+      place-items:center;
+      transform: scale(var(--minScale));
+      transition: transform 120ms linear;
+      will-change: transform;
     }
 
-    .orb{
-      width: 64%;
-      height: 64%;
-      border-radius: 999px;
-      background: radial-gradient(circle at 30% 30%, rgba(255,255,255,0.95), rgba(255,255,255,0.20) 55%, rgba(255,255,255,0.10));
-      border: 1px solid rgba(255,255,255,0.20);
-      box-shadow: 0 20px 50px rgba(0,0,0,0.25);
-      transform: scale(0.82);
-      transition: transform 900ms ease-in-out;
-      position: relative;
-      overflow:hidden;
-    }
-    .orb::after{
-      content:"";
-      position:absolute;
-      inset:-40%;
-      background: radial-gradient(circle at 35% 35%, rgba(255,255,255,0.22), transparent 55%),
-                  radial-gradient(circle at 65% 65%, rgba(255,255,255,0.12), transparent 55%);
-      animation: shimmer 10s ease-in-out infinite;
-      opacity: 0.9;
-    }
-    @keyframes shimmer{
-      0%{ transform: translate3d(0,0,0) rotate(0deg); }
-      50%{ transform: translate3d(6%, -6%, 0) rotate(10deg); }
-      100%{ transform: translate3d(0,0,0) rotate(0deg); }
-    }
-
-    .phaseText{
-      position:absolute;
-      bottom: -6px;
+    svg{
       width: 100%;
-      text-align:center;
-      transform: translateY(100%);
-      font-size: 12px;
-      color: var(--muted);
+      height: 100%;
+      overflow: visible;
+      transform: rotate(-90deg); /* start at 12 o'clock */
     }
 
     .centerText{
       position:absolute;
       inset:0;
-      display:flex;
-      flex-direction:column;
-      align-items:center;
-      justify-content:center;
-      text-align:center;
-      padding: 16px;
+      display:grid;
+      place-items:center;
+      text-transform: lowercase;
+      font-size: 28px;
+      letter-spacing: 0.5px;
+    }
+
+    .dot{
+      position:absolute;
+      width: var(--dot);
+      height: var(--dot);
+      border-radius: 999px;
+      background: var(--dotFill);
+      border: 2px solid var(--dotOutline);
+      transform: translate(-50%, -50%);
       pointer-events:none;
-      gap: 6px;
+      will-change: left, top;
     }
-    .instruction{
-      font-size: 16px;
-      font-weight: 650;
-      letter-spacing: 0.2px;
-    }
-    .countdown{
-      font-variant-numeric: tabular-nums;
-      font-size: 44px;
-      line-height: 1;
-      margin-top: 2px;
-    }
-    .tiny{
-      font-size: 12px;
+
+    .hint{
       color: var(--muted);
+      font-size: 13px;
+      text-align:center;
+      line-height: 1.4;
+      margin: 0;
     }
 
     .controls{
-      display:grid;
-      grid-template-columns: 1fr 1fr 1fr;
+      display:flex;
       gap: 10px;
-      margin-top: 10px;
     }
+
     button{
       appearance:none;
-      border: 1px solid rgba(255,255,255,0.18);
-      background: rgba(255,255,255,0.10);
+      border: 1px solid rgba(255,255,255,0.22);
+      background: rgba(255,255,255,0.08);
       color: var(--text);
-      padding: 12px 12px;
+      padding: 10px 16px;
       border-radius: 14px;
       cursor:pointer;
       font-weight: 650;
       letter-spacing: 0.2px;
       transition: transform 120ms ease, background 120ms ease, border-color 120ms ease;
     }
-    button:hover{ background: rgba(255,255,255,0.14); border-color: rgba(255,255,255,0.26); }
+    button:hover{
+      background: rgba(255,255,255,0.12);
+      border-color: rgba(255,255,255,0.30);
+    }
     button:active{ transform: translateY(1px); }
     button.primary{
       background: rgba(255,255,255,0.92);
       color: rgba(0,0,0,0.82);
-      border-color: rgba(255,255,255,0.65);
+      border-color: rgba(255,255,255,0.60);
     }
-    button.primary:hover{ background: rgba(255,255,255,0.98); }
-
-    .right{
-      display:flex;
-      flex-direction:column;
-      gap: 12px;
-      padding: 6px 6px 6px 0;
-    }
-
-    .panel{
-      background: linear-gradient(180deg, var(--card2), rgba(255,255,255,0.06));
-      border: 1px solid rgba(255,255,255,0.14);
-      border-radius: var(--radius);
-      padding: 14px;
-    }
-
-    .grid2{
-      display:grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 10px;
-    }
-
-    label{
-      display:flex;
-      flex-direction:column;
-      gap: 6px;
-      font-size: 12px;
-      color: var(--muted);
-    }
-    input[type="number"], select{
-      width: 100%;
-      padding: 10px 10px;
-      border-radius: 12px;
-      border: 1px solid rgba(255,255,255,0.18);
-      background: rgba(0,0,0,0.12);
-      color: var(--text);
-      outline:none;
-    }
-    input[type="checkbox"]{
-      transform: translateY(1px);
-    }
-    .row{
-      display:flex;
-      align-items:center;
-      justify-content:space-between;
-      gap: 10px;
-    }
-    .stat{
-      display:flex;
-      align-items:baseline;
-      justify-content:space-between;
-      gap: 10px;
-      margin-top: 6px;
-    }
-    .stat b{
-      font-size: 18px;
-      font-variant-numeric: tabular-nums;
-    }
-    .hint{
-      font-size: 12px;
-      color: var(--muted);
-      line-height:1.45;
-      margin: 0;
-    }
-
-    .footerNote{
-      margin-top: 8px;
-      font-size: 11px;
-      color: rgba(255,255,255,0.55);
-      line-height: 1.45;
-    }
-
-    /* Reduced motion */
-    @media (prefers-reduced-motion: reduce){
-      .wave, .orb::after { animation: none !important; }
-      .orb { transition: none !important; }
+    button:disabled{
+      opacity: 0.55;
+      cursor:not-allowed;
     }
   </style>
 </head>
 <body>
-  <div class="waves" aria-hidden="true">
-    <div class="wave"></div>
-    <div class="wave"></div>
-    <div class="wave"></div>
-  </div>
-
   <div class="wrap">
-    <main class="card" role="application" aria-label="4-7-8 breathing exercise">
-      <section>
-        <div class="header">
-          <div class="title">
-            <h1>4–7–8 Breathing</h1>
-            <div class="pill" id="statusPill">Ready</div>
-          </div>
-          <p class="sub">
-            Use this when cravings spike: inhale for 4, hold for 7, exhale for 8.
-            Repeat a few cycles and let your body downshift.
-          </p>
-        </div>
+    <div class="vizBox" aria-label="4-7-8 breathing timer">
+      <div class="ringScale" id="ringScale">
+        <svg viewBox="0 0 200 200" aria-hidden="true">
+          <!-- Track -->
+          <circle id="track" cx="100" cy="100" r="70"
+                  fill="none" stroke="var(--ringTrack)"
+                  stroke-width="var(--stroke)" stroke-linecap="butt" />
 
-        <div class="visual">
-          <div class="orbShell">
-            <svg viewBox="0 0 100 100" aria-hidden="true">
-              <!-- Track -->
-              <circle cx="50" cy="50" r="44" fill="none" stroke="rgba(255,255,255,0.18)" stroke-width="4"></circle>
-              <!-- Progress -->
-              <circle id="progressCircle" cx="50" cy="50" r="44" fill="none"
-                      stroke="rgba(255,255,255,0.92)" stroke-width="4"
-                      stroke-linecap="round"
-                      stroke-dasharray="276.46"
-                      stroke-dashoffset="276.46"></circle>
-            </svg>
+          <!-- Segments (inhale, hold, exhale) -->
+          <circle id="segInhale" cx="100" cy="100" r="70"
+                  fill="none" stroke="var(--segInhale)"
+                  stroke-width="var(--stroke)" stroke-linecap="butt" />
+          <circle id="segHold" cx="100" cy="100" r="70"
+                  fill="none" stroke="var(--segHold)"
+                  stroke-width="var(--stroke)" stroke-linecap="butt" />
+          <circle id="segExhale" cx="100" cy="100" r="70"
+                  fill="none" stroke="var(--segExhale)"
+                  stroke-width="var(--stroke)" stroke-linecap="butt" />
+        </svg>
+      </div>
 
-            <div class="orb" id="orb"></div>
+      <div class="centerText" id="phaseLabel">inhale</div>
+      <div class="dot" id="dot"></div>
+    </div>
 
-            <div class="centerText">
-              <div class="instruction" id="instruction">Press Start</div>
-              <div class="countdown" id="countdown">—</div>
-              <div class="tiny" id="phaseMeta">Inhale 4 • Hold 7 • Exhale 8</div>
-            </div>
+    <div class="controls">
+      <button class="primary" id="startBtn">Start</button>
+      <button id="pauseBtn" disabled>Pause</button>
+    </div>
 
-            <div class="phaseText" id="phaseText"> </div>
-          </div>
-        </div>
-
-        <div class="controls">
-          <button class="primary" id="startBtn">Start</button>
-          <button id="pauseBtn" disabled>Pause</button>
-          <button id="resetBtn">Reset</button>
-        </div>
-
-        <p class="footerNote">
-          Tip: relax your jaw and shoulders. If you feel lightheaded, shorten the exhale slightly or pause.
-        </p>
-      </section>
-
-      <aside class="right">
-        <div class="panel">
-          <div class="grid2">
-            <label>
-              Cycles
-              <input type="number" id="cyclesInput" min="1" max="20" value="4" />
-            </label>
-            <label>
-              Pace
-              <select id="paceSelect">
-                <option value="1">Normal</option>
-                <option value="0.9">Slightly Faster</option>
-                <option value="1.15">Slightly Slower</option>
-              </select>
-            </label>
-          </div>
-
-          <div class="row" style="margin-top:12px;">
-            <label style="flex-direction:row; align-items:center; gap:10px; margin:0; color:var(--text);">
-              <input type="checkbox" id="soundToggle" />
-              Sound cues
-            </label>
-            <label style="flex-direction:row; align-items:center; gap:10px; margin:0; color:var(--text);">
-              <input type="checkbox" id="vibrateToggle" />
-              Vibration (mobile)
-            </label>
-          </div>
-
-          <div class="stat">
-            <span class="tiny">Cycle</span>
-            <b id="cycleStat">0 / 4</b>
-          </div>
-          <div class="stat">
-            <span class="tiny">Phase</span>
-            <b id="phaseStat">—</b>
-          </div>
-
-          <p class="hint" style="margin-top:10px;">
-            Designed for quick craving relief. Keep your inhale quiet through the nose, and exhale slowly through the mouth.
-          </p>
-        </div>
-
-        <div class="panel">
-          <p class="hint" style="margin:0;">
-            <b style="color:var(--accent)">What to do during a craving:</b><br />
-            Start this exercise, commit to finishing the cycle count, then re-check the urge level.
-            The “peak” typically passes.
-          </p>
-        </div>
-      </aside>
-    </main>
+    <p class="hint">Inhale 4 seconds • Hold 7 seconds • Exhale 8 seconds</p>
   </div>
 
   <script>
-    // 4-7-8 with configurable cycles & pace. Single-file, GitHub Pages friendly.
-
-    const orb = document.getElementById('orb');
-    const progressCircle = document.getElementById('progressCircle');
-
-    const instructionEl = document.getElementById('instruction');
-    const countdownEl = document.getElementById('countdown');
-    const phaseMetaEl = document.getElementById('phaseMeta');
-
-    const startBtn = document.getElementById('startBtn');
-    const pauseBtn = document.getElementById('pauseBtn');
-    const resetBtn = document.getElementById('resetBtn');
-
-    const cyclesInput = document.getElementById('cyclesInput');
-    const paceSelect = document.getElementById('paceSelect');
-    const soundToggle = document.getElementById('soundToggle');
-    const vibrateToggle = document.getElementById('vibrateToggle');
-
-    const cycleStat = document.getElementById('cycleStat');
-    const phaseStat = document.getElementById('phaseStat');
-    const statusPill = document.getElementById('statusPill');
-
-    // Circle circumference for r=44 in viewBox units: 2πr
-    const CIRC = 2 * Math.PI * 44;
-    progressCircle.style.strokeDasharray = CIRC.toFixed(2);
-
-    let audioCtx = null;
-
-    function beep(freq=660, durationMs=90, gain=0.04){
-      if (!soundToggle.checked) return;
-      try{
-        if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        const t0 = audioCtx.currentTime;
-        const o = audioCtx.createOscillator();
-        const g = audioCtx.createGain();
-        o.frequency.value = freq;
-        o.type = 'sine';
-        g.gain.value = gain;
-        o.connect(g);
-        g.connect(audioCtx.destination);
-        o.start(t0);
-        o.stop(t0 + durationMs/1000);
-      }catch(e){}
-    }
-
-    function buzz(ms=40){
-      if (!vibrateToggle.checked) return;
-      if (navigator.vibrate) navigator.vibrate(ms);
-    }
-
-    const phasesBase = [
-      { key:'inhale', label:'Inhale', seconds:4, orbScale:1.05, beep:720 },
-      { key:'hold',   label:'Hold',   seconds:7, orbScale:1.10, beep:520 },
-      { key:'exhale', label:'Exhale', seconds:8, orbScale:0.78, beep:360 }
+    // 4-7-8 breathing: ring scales + dot travels full cycle.
+    const phases = [
+      { key: "inhale", label: "inhale", sec: 4 },
+      { key: "hold",   label: "hold",   sec: 7 },
+      { key: "exhale", label: "exhale", sec: 8 },
     ];
+    const totalSec = phases.reduce((a,p)=>a+p.sec,0);
 
-    // State
+    const ringScaleEl = document.getElementById("ringScale");
+    const phaseLabelEl = document.getElementById("phaseLabel");
+    const dotEl = document.getElementById("dot");
+
+    const startBtn = document.getElementById("startBtn");
+    const pauseBtn = document.getElementById("pauseBtn");
+
+    const segInhale = document.getElementById("segInhale");
+    const segHold   = document.getElementById("segHold");
+    const segExhale = document.getElementById("segExhale");
+
+    // Geometry (must match SVG circle r)
+    const svgR = 70;
+    const svgC = 2 * Math.PI * svgR;
+
+    // Segment dash setup: each segment is a portion of the circumference.
+    function setSegment(circleEl, startFrac, lenFrac) {
+      const segLen = svgC * lenFrac;
+      const gapLen = svgC - segLen;
+      circleEl.style.strokeDasharray = `${segLen} ${gapLen}`;
+      // Because svg is rotated -90deg, "start" at top. Dashoffset moves start point.
+      circleEl.style.strokeDashoffset = `${-svgC * startFrac}`;
+    }
+
+    // Fractions along the ring
+    const inhaleFrac = phases[0].sec / totalSec;
+    const holdFrac   = phases[1].sec / totalSec;
+    const exhaleFrac = phases[2].sec / totalSec;
+
+    setSegment(segInhale, 0, inhaleFrac);
+    setSegment(segHold, inhaleFrac, holdFrac);
+    setSegment(segExhale, inhaleFrac + holdFrac, exhaleFrac);
+
+    // Animation state
     let running = false;
     let paused = false;
-    let timerId = null;
+    let raf = null;
 
-    let cycleTarget = 4;
-    let cycleIndex = 0; // completed cycles
-    let phaseIndex = 0;
-    let phaseRemainingMs = 0;
-    let phaseTotalMs = 0;
-    let lastTick = 0;
+    // Use perf time so pause/resume is clean
+    let t0 = 0;           // start time reference
+    let pausedAt = 0;     // when paused
+    let pauseAccum = 0;   // total paused duration
 
-    function setPill(text){
-      statusPill.textContent = text;
+    const minScale = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--minScale')) || 0.78;
+    const maxScale = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--maxScale')) || 1.0;
+
+    function nowMs(){ return performance.now(); }
+
+    function getElapsedSec() {
+      const t = nowMs();
+      const activeMs = t - t0 - pauseAccum;
+      const sec = (activeMs / 1000) % totalSec;
+      return sec < 0 ? 0 : sec;
     }
 
-    function resetVisual(){
-      orb.style.transform = 'scale(0.82)';
-      progressCircle.style.strokeDashoffset = CIRC.toFixed(2);
-      instructionEl.textContent = 'Press Start';
-      countdownEl.textContent = '—';
-      phaseStat.textContent = '—';
-      cycleStat.textContent = `0 / ${cycleTarget}`;
-      phaseMetaEl.textContent = 'Inhale 4 • Hold 7 • Exhale 8';
-      setPill('Ready');
-    }
-
-    function getPace(){
-      const v = Number(paceSelect.value || 1);
-      return (isFinite(v) && v > 0) ? v : 1;
-    }
-
-    function getCycles(){
-      const n = Math.max(1, Math.min(20, Number(cyclesInput.value || 4)));
-      return n;
-    }
-
-    function currentPhase(){
-      return phasesBase[phaseIndex];
-    }
-
-    function start(){
-      if (running && paused){
-        paused = false;
-        setPill('Running');
-        startBtn.textContent = 'Start';
-        pauseBtn.textContent = 'Pause';
-        lastTick = performance.now();
-        timerId = requestAnimationFrame(tick);
-        return;
+    function phaseFor(sec) {
+      let acc = 0;
+      for (const p of phases) {
+        const start = acc;
+        const end = acc + p.sec;
+        if (sec >= start && sec < end) {
+          return { p, start, end, phaseProgress: (sec - start) / p.sec };
+        }
+        acc = end;
       }
-      if (running) return;
+      // fallback at exact end
+      const last = phases[phases.length - 1];
+      return { p:last, start: totalSec-last.sec, end: totalSec, phaseProgress: 1 };
+    }
 
-      cycleTarget = getCycles();
-      cycleIndex = 0;
-      phaseIndex = 0;
+    function lerp(a,b,t){ return a + (b-a)*t; }
+
+    function setScaleForPhase(key, t) {
+      // inhale: scale up min -> max
+      // hold: stay at max
+      // exhale: scale down max -> min
+      let s = minScale;
+      if (key === "inhale") s = lerp(minScale, maxScale, t);
+      else if (key === "hold") s = maxScale;
+      else if (key === "exhale") s = lerp(maxScale, minScale, t);
+      ringScaleEl.style.transform = `scale(${s})`;
+      return s;
+    }
+
+    function placeDot(elapsedFrac, currentScale) {
+      // Place dot around the OUTER ring, compensating for current scale.
+      const box = document.querySelector(".vizBox").getBoundingClientRect();
+      const cx = box.width / 2;
+      const cy = box.height / 2;
+
+      // Match the ring radius in screen pixels:
+      // svg viewBox is 200x200, r=70 => radius ratio = 70/100 of half-size.
+      const baseRadius = (Math.min(box.width, box.height) / 2) * (svgR / 100);
+
+      const rPx = baseRadius * currentScale;
+
+      // Angle starts at top, clockwise
+      const angle = (-Math.PI / 2) + (elapsedFrac * 2 * Math.PI);
+      const x = cx + rPx * Math.cos(angle);
+      const y = cy + rPx * Math.sin(angle);
+
+      dotEl.style.left = `${x}px`;
+      dotEl.style.top = `${y}px`;
+    }
+
+    function tick() {
+      if (!running || paused) return;
+
+      const sec = getElapsedSec();
+      const frac = sec / totalSec;
+
+      const { p, phaseProgress } = phaseFor(sec);
+      phaseLabelEl.textContent = p.label;
+
+      const scale = setScaleForPhase(p.key, phaseProgress);
+      placeDot(frac, scale);
+
+      raf = requestAnimationFrame(tick);
+    }
+
+    function start() {
+      if (running) return;
 
       running = true;
       paused = false;
+      pauseAccum = 0;
+      t0 = nowMs();
 
-      startBtn.textContent = 'Start';
+      startBtn.disabled = true;
       pauseBtn.disabled = false;
-      pauseBtn.textContent = 'Pause';
+      pauseBtn.textContent = "Pause";
 
-      setPill('Running');
-      beginPhase();
+      raf = requestAnimationFrame(tick);
     }
 
-    function pause(){
+    function pauseToggle() {
       if (!running) return;
-      if (paused){
-        // resume
-        start();
-        return;
+
+      if (!paused) {
+        paused = true;
+        pausedAt = nowMs();
+        pauseBtn.textContent = "Resume";
+        if (raf) cancelAnimationFrame(raf);
+        raf = null;
+      } else {
+        paused = false;
+        pauseAccum += (nowMs() - pausedAt);
+        pauseBtn.textContent = "Pause";
+        raf = requestAnimationFrame(tick);
       }
-      paused = true;
-      setPill('Paused');
-      if (timerId) cancelAnimationFrame(timerId);
-      timerId = null;
-      pauseBtn.textContent = 'Resume';
     }
 
-    function stopAndReset(){
-      running = false;
-      paused = false;
-      if (timerId) cancelAnimationFrame(timerId);
-      timerId = null;
-      startBtn.textContent = 'Start';
-      pauseBtn.textContent = 'Pause';
-      pauseBtn.disabled = true;
-      cycleTarget = getCycles();
-      resetVisual();
-    }
+    startBtn.addEventListener("click", start);
+    pauseBtn.addEventListener("click", pauseToggle);
 
-    function beginPhase(){
-      const pace = getPace();
-      const p = currentPhase();
-      const sec = Math.max(1, Math.round(p.seconds * pace * 100) / 100);
-
-      phaseTotalMs = sec * 1000;
-      phaseRemainingMs = phaseTotalMs;
-
-      instructionEl.textContent = p.label;
-      phaseStat.textContent = p.label;
-      cycleStat.textContent = `${cycleIndex} / ${cycleTarget}`;
-
-      // Orb motion
-      // Inhale: grow, Hold: slight grow/steady, Exhale: shrink
-      orb.style.transform = `scale(${p.orbScale})`;
-
-      // Cue
-      beep(p.beep, 110);
-      buzz(25);
-
-      // Progress resets each phase and fills during that phase
-      progressCircle.style.strokeDashoffset = CIRC.toFixed(2);
-
-      // Set initial countdown
-      countdownEl.textContent = Math.ceil(phaseRemainingMs / 1000);
-
-      lastTick = performance.now();
-      timerId = requestAnimationFrame(tick);
-    }
-
-    function endPhase(){
-      // Advance phase/cycle
-      phaseIndex++;
-      if (phaseIndex >= phasesBase.length){
-        phaseIndex = 0;
-        cycleIndex++;
-      }
-
-      if (cycleIndex >= cycleTarget){
-        finish();
-        return;
-      }
-      beginPhase();
-    }
-
-    function finish(){
-      running = false;
-      paused = false;
-      if (timerId) cancelAnimationFrame(timerId);
-      timerId = null;
-
-      // Gentle "complete" state
-      orb.style.transform = 'scale(0.92)';
-      progressCircle.style.strokeDashoffset = '0';
-      instructionEl.textContent = 'Nice.';
-      countdownEl.textContent = '✓';
-      phaseStat.textContent = 'Done';
-      cycleStat.textContent = `${cycleTarget} / ${cycleTarget}`;
-      setPill('Complete');
-
-      // Completion cue
-      beep(880, 120);
-      setTimeout(()=>beep(660, 120), 140);
-      buzz(60);
-
-      pauseBtn.disabled = true;
-      pauseBtn.textContent = 'Pause';
-    }
-
-    function tick(now){
-      if (!running || paused) return;
-
-      const dt = now - lastTick;
-      lastTick = now;
-
-      phaseRemainingMs = Math.max(0, phaseRemainingMs - dt);
-
-      // Update countdown
-      countdownEl.textContent = Math.max(1, Math.ceil(phaseRemainingMs / 1000));
-
-      // Phase progress (0..1)
-      const progress = 1 - (phaseRemainingMs / phaseTotalMs);
-      const dash = CIRC * (1 - progress);
-      progressCircle.style.strokeDashoffset = dash.toFixed(2);
-
-      // Near end cue (last second) optional—keep subtle
-      if (phaseRemainingMs <= 1050 && phaseRemainingMs + dt > 1050){
-        // small tick cue
-        beep(500, 60, 0.02);
-      }
-
-      if (phaseRemainingMs <= 0){
-        endPhase();
-        return;
-      }
-
-      timerId = requestAnimationFrame(tick);
-    }
-
-    // Wire up
-    startBtn.addEventListener('click', () => start());
-    pauseBtn.addEventListener('click', () => pause());
-    resetBtn.addEventListener('click', () => stopAndReset());
-
-    // Update display when cycles changed while idle
-    cyclesInput.addEventListener('change', () => {
-      if (!running){
-        cycleTarget = getCycles();
-        cycleStat.textContent = `0 / ${cycleTarget}`;
-      }
-    });
-
-    // Initialize
-    cycleTarget = getCycles();
-    resetVisual();
+    // Initial positions (pre-start)
+    (function initPreview(){
+      const scale = setScaleForPhase("inhale", 0);
+      placeDot(0, scale);
+      phaseLabelEl.textContent = "inhale";
+    })();
   </script>
 </body>
 </html>
